@@ -1,12 +1,51 @@
 #include "display/game_window.hpp"
 #include "shaders/shader.hpp"
+#include "utils/input.hpp"
+#include "cameras/camera3d_perspective.hpp"
+#include "models/model.hpp"
 #include <iostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "models/meshgen.hpp"
+#include "utils/utility.hpp"
+#include "utils/stb_perlin.h"
 
 // Template stuff
 Shader s;
 unsigned int VAO;
 unsigned int VBO;
 unsigned int EBO;
+
+// matrices
+glm::mat4 model;
+float angle = 0.0f;
+
+// custom camera
+Camera3DPerspective cam;
+
+// Colors
+glm::vec3 objDiffCol = { 1.0f, 1.0f, 1.0f };
+glm::vec3 objAmbientCol = { 0.15f, 0.15f, 0.15f };
+glm::vec3 objSpecCol;
+
+glm::vec3 sunDiffCol = { 1.0f, 1.0f, 1.0f };
+glm::vec3 sunAmbientCol = { 1.0f, 1.0f, 1.0f };
+glm::vec3 sunSpecCol = { 1.0f, 1.0f, 1.0f };
+
+// light
+glm::vec3 lightPos = { -0.1f, -1.0f, 0.1f };
+
+Model backpack;
+Mesh plane;
+
+//
+float lacunarity = 2.0f;
+float octaves = 6.0f;
+float gain = 0.5f;
+float factor = 0.1f;
+float scale = 1.0f;
+bool wireframe = false;
 
 // Called whenever the window or framebuffer's size is changed
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
@@ -20,6 +59,7 @@ void GameWindow::Initialize() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    cam = Camera3DPerspective{ CAMERA_TYPE_RTS, 80.0f, glm::vec3(0.0f, 10.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) };
 }
 
 // 2. Run after the window has been created, as well as the OpenGL context
@@ -37,72 +77,155 @@ void GameWindow::LoadContent() {
     std::cout << "INFO::IMGUI::SUCCESSFULLY_INITIALIZED" << std::endl;
 
     // Load the template shader
-    s = Shader::LoadShader("resources/shaders/testing.vs", "resources/shaders/testing.fs");
+    s = Shader::LoadShader("resources/shaders/basic_lighting.vs", "resources/shaders/basic_lighting.fs");
 
-    // Vertices needed for a square
-    float vertices[] = {
-    0.5f,  0.5f, 0.0f,  // top right
-    0.5f, -0.5f, 0.0f,  // bottom right
-    -0.5f, -0.5f, 0.0f,  // bottom left
-    -0.5f,  0.5f, 0.0f   // top left 
-    };
+    //backpack = Model("resources/models/backpack.obj");
+    std::cout << "INFO::MODEL::SUCCESSFULLY_INITIALIZED" << std::endl;
 
-    // Indices for rendering the above square
-    unsigned int indices[] = {
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };
-
-    // Create Vertex Array object
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO); // And bind it
-
-    // Create Vertex Buffer object
-    glGenBuffers(1, &VBO);
-    // And bind it (this also includes it into the VAO)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // Fill the VBO with vertex data, simply positions
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // layout = 0 should contain these positions
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0); // Enable that shit
-
-    // Create index buffer
-    glGenBuffers(1, &EBO);
-    // And bind it (also included in VAO)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    // Fill with indices!
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glEnable(GL_DEPTH_TEST);
+    Input::Init(this->windowHandle);
+    plane = GenMeshPlane(250, 250);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 }
 
 void GameWindow::Update() {
+    Input::Begin(this->windowHandle);
+
+    Utils::CaculatePerFaceNormals(plane.vertices, plane.indices);
+    plane.UpdateMesh();
+
+    cam.Update();
+
     // Performs hot-reload of shader. Only reloads whenever it has been modified - so not every frame.
     s.ReloadFromFile();
+
+    Input::End();
 }
 
 void GameWindow::Render() {
-    // Bind the VAO
-    glBindVertexArray(VAO);
-
-    // Make sure we're using the correct shader program.
-    // Must be done per-frame, since the shader program id might change when hot-reloading
-    glUseProgram(s.programID);
+    // Clear the window
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Create new imgui frames
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Clear the window
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glUseProgram(s.programID);
 
-    // Draw the square
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    int ww, wh; glfwGetFramebufferSize(this->windowHandle, &ww, &wh);
+    s.SetMat4("u_proj", cam.GetProjectionMatrix(ww, wh));
+    s.SetMat4("u_view", cam.GetViewMatrix());
+    s.SetVec3("u_viewPos", cam.cameraPos);
 
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+    model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+    s.SetMat4("u_model", model);
+
+    /*
+    struct Material {
+        vec3 ambient;
+        vec3 diffuse;
+        vec3 specular;
+        float shininess;
+    };
+
+    struct Light {
+        vec3 position;
+        vec3 direction;
+        vec3 ambient;
+        vec3 diffuse;
+        vec3 specular;
+    };
+
+    uniform Material u_material;
+    uniform Light u_lightDirectional;
+    */
+    s.SetVec3("u_material.ambient", objAmbientCol);
+    s.SetVec3("u_material.diffuse", objDiffCol);
+    s.SetVec3("u_material.specular", objSpecCol);
+    s.SetFloat("u_material.shininess", 32.0f);
+
+    s.SetVec3("u_lightDirectional.direction", lightPos);
+    s.SetVec3("u_lightDirectional.ambient", sunAmbientCol);
+    s.SetVec3("u_lightDirectional.diffuse", sunDiffCol);
+    s.SetVec3("u_lightDirectional.specular", sunSpecCol);
+
+    model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(5.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(50.0f, 50.0f, 50.0f));
+    s.SetMat4("u_model", model);
+    if (wireframe) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+    else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+    plane.Draw(s);
     // Draw imgui
-    ImGui::ShowDemoWindow();
+
+    ImGui::Begin("Variables", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::SliderFloat("FOV", &(cam.fov), 1.0f, 120.0f, "%.0f", 0);
+    ImGui::SliderFloat("Lerp", &(cam.velocityLerpFactor), 0.0f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Distance", &(cam.targetTargetDistance), 1.0f, 100.0f, "%.0f", 0);
+    ImGui::SliderFloat("Panning Speed", &(cam.panningSpeed), 0.0f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Zooming Speed", &(cam.zoomingSpeed), 0.0f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+
+    ImGui::Separator();
+
+    ImGui::SliderAngle("Pitch", &(cam.targetPitch), -360.0f, 360.0f, "%.1f deg", 0);
+    ImGui::SliderAngle("Yaw", &(cam.targetYaw), -360.0f, 360.0f, "%.1f deg", 0);
+
+    ImGui::SliderFloat3("Camera Target", glm::value_ptr(cam.targetTarget), -100.0f, 100.0f, "%.1f", 0);
+
+    ImGui::Separator();
+
+    ImGui::DragFloat("Octaves", &octaves, 0.5f, 0.0f, 100.0f, "%.2f", 0);
+    ImGui::DragFloat("Gain", &gain, 0.5f, 0.0f, 100.0f, "%.2f", 0);
+    ImGui::DragFloat("Lacunarity", &lacunarity, 0.5f, 0.0f, 100.0f, "%.2f", 0);
+    ImGui::DragFloat("Factor", &factor, 0.001f, 0.0f, 1.0f, "%.2f", 0);
+    ImGui::SliderFloat("Scale", &scale, 0.0f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
+
+    if (ImGui::Button("Generate")) {
+        for (int x = 0; x < 251; x++) {
+            for (int z = 0; z < 251; z++) {
+                float height = stb_perlin_fbm_noise3((float)x * scale, 0.0f, (float)z * scale, lacunarity, gain, octaves);
+                plane.vertices.at(x * 251 + z).posY = height * factor;
+            }
+        }
+    }
+
+    ImGui::End();
+
+    ImGui::Begin("Object Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::ColorPicker3("Object Ambient Color", glm::value_ptr(objAmbientCol), ImGuiColorEditFlags_NoSidePreview);
+    ImGui::ColorPicker3("Object Diffuse Color", glm::value_ptr(objDiffCol), ImGuiColorEditFlags_NoSidePreview);
+    ImGui::ColorPicker3("Object Specular Color", glm::value_ptr(objSpecCol), ImGuiColorEditFlags_NoSidePreview);
+    //ImGui::ColorPicker3("Light Color", glm::value_ptr(lightCol), ImGuiColorEditFlags_NoPicker);
+    ImGui::SliderFloat("Model Angle", &angle, 0.0f, 2.0f * 3.141f, "%.2f", 0);
+    //
+    ImGui::Checkbox("Wireframe", &wireframe);
+
+    ImGui::End();
+
+    ImGui::Begin("Sun Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::ColorPicker3("Sun Ambient Color", glm::value_ptr(sunAmbientCol), ImGuiColorEditFlags_NoSidePreview);
+    ImGui::ColorPicker3("Sun Diffuse Color", glm::value_ptr(sunDiffCol), ImGuiColorEditFlags_NoSidePreview);
+    ImGui::ColorPicker3("Sun Specular Color", glm::value_ptr(sunSpecCol), ImGuiColorEditFlags_NoSidePreview);
+
+    ImGui::SliderFloat3("Light Direction", glm::value_ptr(lightPos), -1.0f, 1.0f, "%.1f", 0);
+
+    ImGui::End();
+
+    // Render imgui
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

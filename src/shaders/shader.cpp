@@ -1,5 +1,6 @@
 #include "shaders/shader.hpp"
 #include "utils/utility.hpp"
+using namespace Utils;
 
 Shader::Shader() {
 
@@ -138,4 +139,20 @@ Shader Shader::LoadShader(std::string fileVertexShader, std::string fileFragment
     }
 
     return s;
+}
+
+void Shader::SetVec3(const char* uniform, glm::vec3 value) {
+    glUniform3f(glGetUniformLocation(this->programID, uniform), value.x, value.y, value.z);
+}
+
+void Shader::SetFloat(const char* uniform, float value) {
+    glUniform1f(glGetUniformLocation(this->programID, uniform), value);
+}
+
+void Shader::SetMat4(const char* uniform, glm::mat4 value) {
+    glUniformMatrix4fv(glGetUniformLocation(this->programID, uniform), 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void Shader::SetBool(const char* uniform, bool value) {
+    glUniform1i(glGetUniformLocation(this->programID, uniform), value == true ? 1 : 0);
 }

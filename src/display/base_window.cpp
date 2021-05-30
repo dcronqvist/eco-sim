@@ -1,4 +1,5 @@
 #include "display/base_window.hpp"
+#include "utils/utility.hpp"
 #include <iostream>
 
 BaseWindow::BaseWindow() {
@@ -41,8 +42,11 @@ int BaseWindow::Run() {
 
     // Main game loop
     while (!glfwWindowShouldClose(windowHandle)) {
+        float currentTime = (float)glfwGetTime();
+        Utils::deltaTime = currentTime - Utils::previousTime;
         Update();
         Render();
+        Utils::previousTime = currentTime;
     }
 
     // Unload and destroy 
