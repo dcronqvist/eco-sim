@@ -21,4 +21,8 @@ namespace Utils {
     long GetFileModTime(std::string file);
     float Clamp(float value, float min, float max);
     void CaculatePerFaceNormals(vector<Vertex>& vertices, vector<unsigned int>& indices);
+
+    // a value of 0 gives min, while a value of 1 gives max.
+    float Lerp(float min, float max, float value);
+    float GetCircularFallof(int widthX, int widthZ, int x, int z);
 };

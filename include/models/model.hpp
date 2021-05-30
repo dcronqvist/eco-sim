@@ -31,4 +31,5 @@ private:
     void LoadModel(string path);
 };
 
+// TODO: Move this to a textures file instead
 unsigned int TextureFromFile(const char* path, const string& directory);

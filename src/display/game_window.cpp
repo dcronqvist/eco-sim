@@ -39,13 +39,14 @@ glm::vec3 lightPos = { -0.1f, -1.0f, 0.1f };
 Model backpack;
 Mesh plane;
 
-//
-float lacunarity = 2.0f;
-float octaves = 6.0f;
-float gain = 0.5f;
+// Ground variables
+int octaves = 1;
 float factor = 0.1f;
-float scale = 1.0f;
+float falloffFactor = 1.0f;
+float scale = 0.2f;
+float power = 1.0f;
 bool wireframe = false;
+int seed = 12401241;
 
 // Called whenever the window or framebuffer's size is changed
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
@@ -84,7 +85,7 @@ void GameWindow::LoadContent() {
 
     glEnable(GL_DEPTH_TEST);
     Input::Init(this->windowHandle);
-    plane = GenMeshPlane(250, 250);
+    plane = GenMeshPlane(150, 150);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 }
@@ -184,19 +185,37 @@ void GameWindow::Render() {
 
     ImGui::SliderFloat3("Camera Target", glm::value_ptr(cam.targetTarget), -100.0f, 100.0f, "%.1f", 0);
 
-    ImGui::Separator();
+    ImGui::End();
 
-    ImGui::DragFloat("Octaves", &octaves, 0.5f, 0.0f, 100.0f, "%.2f", 0);
-    ImGui::DragFloat("Gain", &gain, 0.5f, 0.0f, 100.0f, "%.2f", 0);
-    ImGui::DragFloat("Lacunarity", &lacunarity, 0.5f, 0.0f, 100.0f, "%.2f", 0);
+    ImGui::Begin("World Variables", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::Text("Ground");
+    ImGui::InputInt("Seed", &seed, 1, 100, 0);
     ImGui::DragFloat("Factor", &factor, 0.001f, 0.0f, 1.0f, "%.2f", 0);
+    ImGui::DragFloat("Falloff Factor", &falloffFactor, 0.1f, 0.0f, 3.0f, "%.2f", 0);
     ImGui::SliderFloat("Scale", &scale, 0.0f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderInt("Octaves", &octaves, 1, 50, "%d", 0);
+    ImGui::SliderFloat("Power", &power, 0.01f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
 
     if (ImGui::Button("Generate")) {
-        for (int x = 0; x < 251; x++) {
-            for (int z = 0; z < 251; z++) {
-                float height = stb_perlin_fbm_noise3((float)x * scale, 0.0f, (float)z * scale, lacunarity, gain, octaves);
-                plane.vertices.at(x * 251 + z).posY = height * factor;
+        for (int x = 0; x < 151; x++) {
+            for (int z = 0; z < 151; z++) {
+                float _x = (float)x * scale;
+                float _z = (float)z * scale;
+
+                float groundHeight = 0.0f;
+                float octaveHeight = 0.0f;
+
+                for (int i = 1; i <= octaves; i++) {
+                    octaveHeight += (1.0f / (float)i);
+                    groundHeight += (1.0f / (float)i) * stb_perlin_noise3_seed(i * _x + i * 31 % 7, 0.0f, i * _z + i * 72 % 17, 0, 0, 0, seed);
+                }
+
+                groundHeight = groundHeight / octaveHeight;
+                groundHeight = powf(groundHeight, power);
+                //float groundHeight = stb_perlin_fbm_noise3((float)x * scale, 0.0f, (float)z * scale, lacunarity, gain, octaves) * factor;
+                //float mountainHeight = stb_perlin_fbm_noise3((float)x * mountainScale, 0.0f, (float)z * mountainScale, mLacunarity, mGain, mOctaves) * mFactor;
+                plane.vertices.at(x * 151 + z).posY = groundHeight * factor;
             }
         }
     }

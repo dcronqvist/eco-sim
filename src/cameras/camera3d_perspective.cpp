@@ -15,7 +15,7 @@ glm::mat4 Camera3DPerspective::GetViewMatrix() {
 
 void Camera3DPerspective::Update() {
     this->cameraRight = glm::normalize(glm::cross(this->forward, this->worldUp));
-    float camHeightFactor = (this->cameraPos.y / 10.0F);
+    float camHeightFactor = (this->targetDistance / 100.0f);
 
 
     switch (this->cameraType) {

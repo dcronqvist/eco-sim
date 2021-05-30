@@ -58,3 +58,20 @@ void Utils::CaculatePerFaceNormals(vector<Vertex>& vertices, vector<unsigned int
         next->normZ = v3.z;
     }
 }
+
+float Utils::Lerp(float min, float max, float value) {
+    return value * (max - min) + min;
+}
+
+float Utils::GetCircularFallof(int widthX, int widthZ, int x, int z) {
+    // Get middle
+    glm::vec2 middle = glm::vec2(widthX / 2, widthZ / 2);
+    float radius = widthX / 2;
+
+    glm::vec2 pos = glm::vec2(x, z);
+    float distToMiddle = glm::distance(pos, middle);
+
+    float val = Clamp(1.0f - (distToMiddle / radius), 0.0f, 1.0f);
+
+    return Clamp(Lerp(0.0f, 1.0f, val * val), 0.0f, 1.0f);
+}
