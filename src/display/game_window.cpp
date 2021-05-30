@@ -10,6 +10,7 @@
 #include "models/meshgen.hpp"
 #include "utils/utility.hpp"
 #include "utils/stb_perlin.h"
+#include "world/world.hpp"
 
 // Template stuff
 Shader s;
@@ -36,8 +37,7 @@ glm::vec3 sunSpecCol = { 1.0f, 1.0f, 1.0f };
 // light
 glm::vec3 lightPos = { -0.1f, -1.0f, 0.1f };
 
-Model backpack;
-Mesh plane;
+World world;
 
 // Ground variables
 int octaves = 1;
@@ -85,7 +85,9 @@ void GameWindow::LoadContent() {
 
     glEnable(GL_DEPTH_TEST);
     Input::Init(this->windowHandle);
-    plane = GenMeshPlane(150, 150);
+
+    world = World(150, 1245125);
+
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
 }
@@ -93,10 +95,8 @@ void GameWindow::LoadContent() {
 void GameWindow::Update() {
     Input::Begin(this->windowHandle);
 
-    Utils::CaculatePerFaceNormals(plane.vertices, plane.indices);
-    plane.UpdateMesh();
-
     cam.Update();
+    cam.targetTarget.y = world.GetWorldHeight((int)cam.targetTarget.z, (int)cam.targetTarget.x);
 
     // Performs hot-reload of shader. Only reloads whenever it has been modified - so not every frame.
     s.ReloadFromFile();
@@ -115,37 +115,11 @@ void GameWindow::Render() {
     ImGui::NewFrame();
 
     glUseProgram(s.programID);
-
     int ww, wh; glfwGetFramebufferSize(this->windowHandle, &ww, &wh);
     s.SetMat4("u_proj", cam.GetProjectionMatrix(ww, wh));
     s.SetMat4("u_view", cam.GetViewMatrix());
     s.SetVec3("u_viewPos", cam.cameraPos);
 
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-    model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-    s.SetMat4("u_model", model);
-
-    /*
-    struct Material {
-        vec3 ambient;
-        vec3 diffuse;
-        vec3 specular;
-        float shininess;
-    };
-
-    struct Light {
-        vec3 position;
-        vec3 direction;
-        vec3 ambient;
-        vec3 diffuse;
-        vec3 specular;
-    };
-
-    uniform Material u_material;
-    uniform Light u_lightDirectional;
-    */
     s.SetVec3("u_material.ambient", objAmbientCol);
     s.SetVec3("u_material.diffuse", objDiffCol);
     s.SetVec3("u_material.specular", objSpecCol);
@@ -157,9 +131,9 @@ void GameWindow::Render() {
     s.SetVec3("u_lightDirectional.specular", sunSpecCol);
 
     model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(5.0f, 0.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(75.0f, 0.0f, 75.0f));
+    model = glm::scale(model, glm::vec3(150.0f, 1.0f, 150.0f));
     model = glm::rotate(model, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(50.0f, 50.0f, 50.0f));
     s.SetMat4("u_model", model);
     if (wireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -167,7 +141,7 @@ void GameWindow::Render() {
     else {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-    plane.Draw(s);
+    world.Draw(s);
     // Draw imgui
 
     ImGui::Begin("Variables", NULL, ImGuiWindowFlags_AlwaysAutoResize);
@@ -187,49 +161,12 @@ void GameWindow::Render() {
 
     ImGui::End();
 
-    ImGui::Begin("World Variables", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-
-    ImGui::Text("Ground");
-    ImGui::InputInt("Seed", &seed, 1, 100, 0);
-    ImGui::DragFloat("Factor", &factor, 0.001f, 0.0f, 1.0f, "%.2f", 0);
-    ImGui::DragFloat("Falloff Factor", &falloffFactor, 0.1f, 0.0f, 3.0f, "%.2f", 0);
-    ImGui::SliderFloat("Scale", &scale, 0.0f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
-    ImGui::SliderInt("Octaves", &octaves, 1, 50, "%d", 0);
-    ImGui::SliderFloat("Power", &power, 0.01f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
-
-    if (ImGui::Button("Generate")) {
-        for (int x = 0; x < 151; x++) {
-            for (int z = 0; z < 151; z++) {
-                float _x = (float)x * scale;
-                float _z = (float)z * scale;
-
-                float groundHeight = 0.0f;
-                float octaveHeight = 0.0f;
-
-                for (int i = 1; i <= octaves; i++) {
-                    octaveHeight += (1.0f / (float)i);
-                    groundHeight += (1.0f / (float)i) * stb_perlin_noise3_seed(i * _x + i * 31 % 7, 0.0f, i * _z + i * 72 % 17, 0, 0, 0, seed);
-                }
-
-                groundHeight = groundHeight / octaveHeight;
-                groundHeight = powf(groundHeight, power);
-                //float groundHeight = stb_perlin_fbm_noise3((float)x * scale, 0.0f, (float)z * scale, lacunarity, gain, octaves) * factor;
-                //float mountainHeight = stb_perlin_fbm_noise3((float)x * mountainScale, 0.0f, (float)z * mountainScale, mLacunarity, mGain, mOctaves) * mFactor;
-                plane.vertices.at(x * 151 + z).posY = groundHeight * factor;
-            }
-        }
-    }
-
-    ImGui::End();
-
     ImGui::Begin("Object Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 
     ImGui::ColorPicker3("Object Ambient Color", glm::value_ptr(objAmbientCol), ImGuiColorEditFlags_NoSidePreview);
     ImGui::ColorPicker3("Object Diffuse Color", glm::value_ptr(objDiffCol), ImGuiColorEditFlags_NoSidePreview);
     ImGui::ColorPicker3("Object Specular Color", glm::value_ptr(objSpecCol), ImGuiColorEditFlags_NoSidePreview);
-    //ImGui::ColorPicker3("Light Color", glm::value_ptr(lightCol), ImGuiColorEditFlags_NoPicker);
     ImGui::SliderFloat("Model Angle", &angle, 0.0f, 2.0f * 3.141f, "%.2f", 0);
-    //
     ImGui::Checkbox("Wireframe", &wireframe);
 
     ImGui::End();

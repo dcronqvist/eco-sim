@@ -28,7 +28,9 @@ void Camera3DPerspective::Update() {
         }
         if (Input::IsMouseButtonDown(GLFW_MOUSE_BUTTON_MIDDLE)) {
             glm::vec2 mouseDragDiff = this->startingMouseDragPosition - Input::GetMousePosition();
+            float y = this->targetTarget.y;
             this->targetTarget = this->cameraPosOnStartDrag + (((this->forward * mouseDragDiff.y) + (this->cameraRight * -mouseDragDiff.x))) * panningSpeed * camHeightFactor;
+            this->targetTarget.y = y;
         }
 
         float mouseWheelMove = Input::GetMouseWheelMove();
