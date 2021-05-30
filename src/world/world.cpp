@@ -6,6 +6,7 @@ World::World() {
 
 World::World(int size, int seed) {
     this->size = size;
+    this->cam = Camera3DPerspective{ CAMERA_TYPE_RTS, 80.0f, glm::vec3(0.0f, 10.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) };
 
     // Generate starting plane
     worldMesh = GenMeshPlane(size, size);
@@ -61,17 +62,19 @@ World::World(int size, int seed) {
     worldMesh.UpdateMesh();
 }
 
+void World::Update() {
+
+}
+
 void World::Draw(Shader& shader) {
     worldMesh.Draw(shader);
 }
 
 float World::GetWorldHeight(float x, float z) {
-
     if (x >= 0 && x <= size && z >= 0 && z <= size) {
         return worldMesh.vertices.at((int)x * (size + 1) + (int)z).posY;
     }
     else {
         return 0.0f;
     }
-
 }

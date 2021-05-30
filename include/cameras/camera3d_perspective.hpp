@@ -33,8 +33,8 @@ public:
         this->targetPosition = intialTarget;
         this->targetDistance = glm::distance(initialPos, intialTarget);
         this->targetTargetDistance = this->targetDistance;
-        this->panningSpeed = 0.05f;
-        this->zoomingSpeed = 4.0f;
+        this->panningSpeed = 0.15f;
+        this->zoomingSpeed = 10.0f;
     }
 
     glm::mat4 GetProjectionMatrix(float framebufferWidth, float framebufferHeight);
