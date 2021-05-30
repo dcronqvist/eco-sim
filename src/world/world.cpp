@@ -5,6 +5,16 @@ World::World() {
 }
 
 World::World(int size, int seed) {
+    // Colors
+    worldAmbientColor = { 0.086f, 0.174f, 0.079f };
+    worldDiffuseColor = { 0.174f, 0.348f, 0.184f };
+    worldSpecularColor = { 0.047f, 0.049f, 0.020f };
+
+    sunDirection = { -0.7f, -1.0f, 0.1f };
+    sunAmbientColor = { 1.0f, 1.0f, 1.0f };
+    sunDiffuseColor = { 1.0f, 1.0f, 1.0f };
+    sunSpecularColor = { 1.0f, 1.0f, 1.0f };
+
     this->size = size;
     this->cam = Camera3DPerspective{ CAMERA_TYPE_RTS, 80.0f, glm::vec3(0.0f, 10.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) };
 
@@ -63,10 +73,31 @@ World::World(int size, int seed) {
 }
 
 void World::Update() {
-
+    cam.Update();
+    cam.targetTarget.y = GetWorldHeight((int)cam.targetTarget.z, (int)cam.targetTarget.x);
 }
 
-void World::Draw(Shader& shader) {
+void World::Draw(Shader& shader, GLFWwindow* windowHandle) {
+    glUseProgram(shader.programID);
+    int ww, wh; glfwGetFramebufferSize(windowHandle, &ww, &wh);
+    shader.SetMat4("u_proj", cam.GetProjectionMatrix(ww, wh));
+    shader.SetMat4("u_view", cam.GetViewMatrix());
+    shader.SetVec3("u_viewPos", cam.cameraPos);
+
+    shader.SetVec3("u_material.ambient", worldAmbientColor);
+    shader.SetVec3("u_material.diffuse", worldDiffuseColor);
+    shader.SetVec3("u_material.specular", worldSpecularColor);
+    shader.SetFloat("u_material.shininess", 32.0f);
+
+    shader.SetVec3("u_lightDirectional.direction", sunDirection);
+    shader.SetVec3("u_lightDirectional.ambient", sunAmbientColor);
+    shader.SetVec3("u_lightDirectional.diffuse", sunDiffuseColor);
+    shader.SetVec3("u_lightDirectional.specular", sunSpecularColor);
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3((float)size / 2.0f, 0.0f, (float)size / 2.0f));
+    model = glm::scale(model, glm::vec3((float)size, 1.0f, (float)size));
+    shader.SetMat4("u_model", model);
     worldMesh.Draw(shader);
 }
 
