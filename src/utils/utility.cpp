@@ -75,3 +75,8 @@ float Utils::GetCircularFallof(int widthX, int widthZ, int x, int z) {
 
     return Clamp(Lerp(0.0f, 1.0f, val * val), 0.0f, 1.0f);
 }
+
+float Utils::RandomFloat(float min, float max) {
+    float r3 = min + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max - min)));
+    return r3;
+}

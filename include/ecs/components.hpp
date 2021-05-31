@@ -41,9 +41,18 @@ struct MeshComponent : public Component {
     Mesh* mesh;
     bool wireframeMode;
 
+    glm::vec3 ambientColor;
+    glm::vec3 diffuseColor;
+    glm::vec3 specularColor;
+
     MeshComponent() {
         mesh = nullptr;
         wireframeMode = false;
+
+        ambientColor = { 1.0f, 1.0f, 1.0f };
+        diffuseColor = { 1.0f, 1.0f, 1.0f };
+        specularColor = { 0.15f, 0.15f, 0.15f };
+
     }
 
     void UI() {
@@ -51,6 +60,9 @@ struct MeshComponent : public Component {
         if (mesh != nullptr) {
             ImGui::Text("Vertex Amount: %d", mesh->vertices.size());
             ImGui::Text("Face Amount: %d", mesh->indices.size() / 3);
+            ImGui::ColorEdit3("Ambient Color", glm::value_ptr(ambientColor));
+            ImGui::ColorEdit3("Diffuse Color", glm::value_ptr(diffuseColor));
+            ImGui::ColorEdit3("Specular Color", glm::value_ptr(specularColor));
             ImGui::Checkbox("Wireframe Mode", &wireframeMode);
         }
         else {
@@ -64,15 +76,27 @@ struct MeshComponent : public Component {
 
 struct ModelComponent : public Component {
     Model* model;
+    bool wireframeMode;
+
+    glm::vec3 ambientColor;
+    glm::vec3 diffuseColor;
+    glm::vec3 specularColor;
 
     ModelComponent() {
         model = nullptr;
+        ambientColor = { 1.0f, 1.0f, 1.0f };
+        diffuseColor = { 1.0f, 1.0f, 1.0f };
+        specularColor = { 0.15f, 0.15f, 0.15f };
+        wireframeMode = false;
     }
 
     void UI() {
         ImGui::Text("Model");
         if (model != nullptr) {
-            ImGui::Checkbox("Wireframe Mode", &(model->wireframe));
+            ImGui::ColorEdit3("Ambient Color", glm::value_ptr(ambientColor));
+            ImGui::ColorEdit3("Diffuse Color", glm::value_ptr(diffuseColor));
+            ImGui::ColorEdit3("Specular Color", glm::value_ptr(specularColor));
+            ImGui::Checkbox("Wireframe Mode", &(wireframeMode));
         }
         else {
             if (ImGui::Button("Load Tree Model")) {

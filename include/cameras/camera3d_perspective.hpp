@@ -4,7 +4,7 @@
 #define CAMERA_TYPE_RTS 0
 
 class Camera3DPerspective : public Camera {
-public:
+    public:
     int cameraType;
     float pitch, yaw, targetPitch, targetYaw;
     float velocityLerpFactor;
@@ -30,6 +30,7 @@ public:
         this->yaw = 0.0f;
         this->targetPitch = 0.0f;
         this->targetYaw = 0.0f;
+        this->targetTarget = intialTarget;
         this->targetPosition = intialTarget;
         this->targetDistance = glm::distance(initialPos, intialTarget);
         this->targetTargetDistance = this->targetDistance;

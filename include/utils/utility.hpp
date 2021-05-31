@@ -25,4 +25,5 @@ namespace Utils {
     // a value of 0 gives min, while a value of 1 gives max.
     float Lerp(float min, float max, float value);
     float GetCircularFallof(int widthX, int widthZ, int x, int z);
+    float RandomFloat(float min = 0.0f, float max = 1.0f);
 };

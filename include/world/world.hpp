@@ -9,14 +9,23 @@
 class Entity;
 
 class World {
-public:
+    public:
     // World camera
     Camera3DPerspective cam;
 
     // World mesh
     Mesh worldMesh;
+    Mesh waterMesh;
     // Size of world
     int size;
+    float waterHeight;
+
+    // Water ambient color
+    glm::vec3 waterAmbientColor;
+    // Water diffuse color
+    glm::vec3 waterDiffuseColor;
+    // Water specular color
+    glm::vec3 waterSpecularColor;
 
     // World ambient color
     glm::vec3 worldAmbientColor;
@@ -37,6 +46,8 @@ public:
     // ECS Stuff
     vector<entt::entity> entityIds;
     entt::registry registry;
+
+    Model* treeModel;
 
     World() = default;
     World(int size, int seed);

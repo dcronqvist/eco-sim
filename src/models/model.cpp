@@ -48,12 +48,10 @@ void Model::Draw(Shader& shader) {
     if (this->wireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
-    else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
     for (int i = 0; i < meshes.size(); i++) {
         meshes[i].Draw(shader);
     }
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Model::LoadModel(string path) {

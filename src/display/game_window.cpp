@@ -89,6 +89,13 @@ void SubmitUI() {
     ImGui::SliderAngle("Yaw", &(world.cam.targetYaw), -360.0f, 360.0f, "%.1f deg", 0);
     ImGui::SliderFloat3("Camera Target", glm::value_ptr(world.cam.targetTarget), -100.0f, 100.0f, "%.1f", 0);
 
+    ImGui::Separator();
+
+    ImGui::SliderFloat("Water Height", &(world.waterHeight), -10.0f, 10.0f, "%.1f", 0);
+    ImGui::ColorEdit3("Water Ambient Color", glm::value_ptr(world.waterAmbientColor), 0);
+    ImGui::ColorEdit3("Water Diffuse Color", glm::value_ptr(world.waterDiffuseColor), 0);
+    ImGui::ColorEdit3("Water Specular Color", glm::value_ptr(world.waterSpecularColor), 0);
+
     ImGui::End();
 
     if (Input::IsKeyDown(GLFW_KEY_S)) {
