@@ -41,7 +41,7 @@ Mesh GenMeshPlane(int xres, int zres) {
     Utils::CaculatePerFaceNormals(vertices, indices);
 
     Texture tex;
-    tex.id = TextureFromFile("resources/textures/one.jpg", "");
+    tex.id = TextureFromFile("one.jpg", "resources/models");
     tex.path = "";
     tex.type = "texture_diffuse";
 

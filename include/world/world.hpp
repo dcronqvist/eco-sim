@@ -4,6 +4,9 @@
 #include "utils/stb_perlin.h"
 #include "utils/utility.hpp"
 #include "cameras/camera3d_perspective.hpp"
+#include "ecs/entt.hpp"
+
+class Entity;
 
 class World {
 public:
@@ -31,10 +34,16 @@ public:
     // Sun's specular color
     glm::vec3 sunSpecularColor;
 
-    World();
+    // ECS Stuff
+    vector<entt::entity> entityIds;
+    entt::registry registry;
+
+    World() = default;
     World(int size, int seed);
 
     void Update();
     void Draw(Shader& shader, GLFWwindow* windowHandle);
     float GetWorldHeight(float x, float z);
+    Entity CreateEntity();
+    Entity GetEntity(entt::entity e);
 };

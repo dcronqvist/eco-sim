@@ -66,7 +66,7 @@ void Mesh::Draw(Shader& shader) {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
 
-    shader.SetBool("u_textures_present", textures.size() == 0);
+    shader.SetBool("u_textures_present", textures.size() != 0);
     for (unsigned int i = 0; i < textures.size(); i++) {
         glActiveTexture(GL_TEXTURE0 + i);
 

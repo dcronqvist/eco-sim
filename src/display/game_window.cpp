@@ -11,10 +11,14 @@
 #include "utils/utility.hpp"
 #include "utils/stb_perlin.h"
 #include "world/world.hpp"
+#include "ecs/entity.hpp"
+#include "ecs/components.hpp"
 
 // Template stuff
 Shader s;
 World world;
+
+entt::entity selectedEntity = entt::null;
 
 // Called whenever the window or framebuffer's size is changed
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
@@ -63,6 +67,10 @@ void GameWindow::Update() {
     // Performs hot-reload of shader. Only reloads whenever it has been modified - so not every frame.
     s.ReloadFromFile();
 
+    if (Input::IsKeyPressed(GLFW_KEY_A)) {
+        world.CreateEntity();
+    }
+
     Input::End();
 }
 
@@ -83,21 +91,51 @@ void SubmitUI() {
 
     ImGui::End();
 
-    ImGui::Begin("Object Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+    if (Input::IsKeyDown(GLFW_KEY_S)) {
+        int x = 2;
+    }
 
-    ImGui::ColorPicker3("World Ambient Color", glm::value_ptr(world.worldAmbientColor), ImGuiColorEditFlags_NoSidePreview);
-    ImGui::ColorPicker3("World Diffuse Color", glm::value_ptr(world.worldDiffuseColor), ImGuiColorEditFlags_NoSidePreview);
-    ImGui::ColorPicker3("World Specular Color", glm::value_ptr(world.worldSpecularColor), ImGuiColorEditFlags_NoSidePreview);
+    // Entities
+    ImGui::Begin("Inspector", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::ListBoxHeader("Entities");
+    for (entt::entity e : world.entityIds) {
+        string name = to_string((uint32_t)e);
+        if (ImGui::Selectable(name.c_str(), selectedEntity == e)) {
+            selectedEntity = e;
+        }
+    }
+    ImGui::ListBoxFooter();
 
-    ImGui::End();
+    // Get all components of entity
 
-    ImGui::Begin("Sun Properties", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+    if (world.registry.valid(selectedEntity)) {
+        Entity e = world.GetEntity(selectedEntity);
 
-    ImGui::ColorPicker3("Sun Ambient Color", glm::value_ptr(world.sunAmbientColor), ImGuiColorEditFlags_NoSidePreview);
-    ImGui::ColorPicker3("Sun Diffuse Color", glm::value_ptr(world.sunDiffuseColor), ImGuiColorEditFlags_NoSidePreview);
-    ImGui::ColorPicker3("Sun Specular Color", glm::value_ptr(world.sunSpecularColor), ImGuiColorEditFlags_NoSidePreview);
+        if (ImGui::Button("Add TransformComponent")) {
+            e.AddComponent<TransformComponent>();
+        }
+        if (ImGui::Button("Add MeshComponent")) {
+            e.AddComponent<MeshComponent>();
+        }
+        if (ImGui::Button("Add ModelComponent")) {
+            e.AddComponent<ModelComponent>();
+        }
 
-    ImGui::SliderFloat3("Sun Direction", glm::value_ptr(world.sunDirection), -1.0f, 1.0f, "%.1f", 0);
+        ImGui::Separator();
+
+        if (e.HasComponent<TransformComponent>()) {
+            e.GetComponent<TransformComponent>().UI();
+            ImGui::Separator();
+        }
+        if (e.HasComponent<MeshComponent>()) {
+            e.GetComponent<MeshComponent>().UI();
+            ImGui::Separator();
+        }
+        if (e.HasComponent<ModelComponent>()) {
+            e.GetComponent<ModelComponent>().UI();
+            ImGui::Separator();
+        }
+    }
 
     ImGui::End();
 }

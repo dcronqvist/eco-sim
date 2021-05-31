@@ -1,8 +1,6 @@
 #include "world/world.hpp"
-
-World::World() {
-
-}
+#include "ecs/entity.hpp"
+#include "ecs/components.hpp"
 
 World::World(int size, int seed) {
     // Colors
@@ -99,6 +97,32 @@ void World::Draw(Shader& shader, GLFWwindow* windowHandle) {
     model = glm::scale(model, glm::vec3((float)size, 1.0f, (float)size));
     shader.SetMat4("u_model", model);
     worldMesh.Draw(shader);
+
+    // Draw all entities
+    // Render entities MeshComponents & TransformComponents
+    // auto group = registry.group<TransformComponent>(entt::get<MeshComponent>);
+    // for (auto e : group) {
+    //     const auto& [transform, mesh] = group.get<TransformComponent, MeshComponent>(e);
+    //     shader.SetMat4("u_model", transform.GetModelMatrix());
+
+    //     if (mesh.mesh != nullptr) {
+    //         if (mesh.wireframeMode) {
+    //             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //         }
+    //         mesh.mesh->Draw(shader);
+    //         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //     }
+    // }
+
+    auto models = registry.group<TransformComponent>(entt::get<ModelComponent>);
+    for (auto e : models) {
+        const auto& [transform, model] = models.get<TransformComponent, ModelComponent>(e);
+        shader.SetMat4("u_model", transform.GetModelMatrix());
+
+        if (model.model != nullptr) {
+            model.model->Draw(shader);
+        }
+    }
 }
 
 float World::GetWorldHeight(float x, float z) {
@@ -108,4 +132,15 @@ float World::GetWorldHeight(float x, float z) {
     else {
         return 0.0f;
     }
+}
+
+Entity World::CreateEntity() {
+    entt::entity handle = registry.create();
+    Entity e = { handle, this };
+    entityIds.push_back(handle);
+    return e;
+}
+
+Entity World::GetEntity(entt::entity e) {
+    return { e, this };
 }
