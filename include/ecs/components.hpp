@@ -17,6 +17,8 @@ struct TransformComponent : public Component {
 
     TransformComponent() {
         scale = { 1.0f, 1.0f, 1.0f };
+        rotation = { 0.0f, 0.0f, 0.0f };
+        position = { 0.0f, 0.0f, 0.0f };
     }
 
     glm::mat4 GetModelMatrix() {
