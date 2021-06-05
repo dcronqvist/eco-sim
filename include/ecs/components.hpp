@@ -104,6 +104,25 @@ struct ModelComponent : public Component {
             if (ImGui::Button("Load Tree Model")) {
                 model = new Model("resources/models/tree.obj");
             }
+            if (ImGui::Button("Load Animal Model")) {
+                model = new Model("resources/models/animal.obj");
+            }
         }
+    }
+};
+
+struct FollowGroundHeightComponent : public Component {
+    bool enabled;
+    float offset;
+
+    FollowGroundHeightComponent() {
+        enabled = true;
+        offset = 0.0f;
+    }
+
+    void UI() {
+        ImGui::Text("FollowGroundHeight");
+        ImGui::DragFloat("Offset", &offset, 0.1f, -100.0f, 100.0f, "%.2f", 0);
+        ImGui::Checkbox("Enabled", &enabled);
     }
 };

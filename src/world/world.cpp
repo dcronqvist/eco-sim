@@ -58,7 +58,7 @@ World::World(int size, int seed) {
 
     scale = 0.0068f * 3.0f;
     octaves = 4;
-    factor = 18.5f;
+    factor = 15.5f;
 
     for (int x = 0; x < size + 1; x++) {
         for (int z = 0; z < size + 1; z++) {
@@ -93,6 +93,15 @@ World::World(int size, int seed) {
 void World::Update() {
     cam.Update();
     cam.targetTarget.y = GetWorldHeight((int)cam.targetTarget.z, (int)cam.targetTarget.x);
+
+    auto followGrounders = registry.view<TransformComponent, FollowGroundHeightComponent>();
+    for (auto e : followGrounders) {
+        const auto& [transform, ground] = followGrounders.get<TransformComponent, FollowGroundHeightComponent>(e);
+        if (ground.enabled) {
+            float groundHeight = GetWorldHeight(transform.position.z, transform.position.x);
+            transform.position.y = groundHeight + ground.offset;
+        }
+    }
 }
 
 void World::Draw(Shader& shader, GLFWwindow* windowHandle) {

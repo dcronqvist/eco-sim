@@ -26,6 +26,9 @@ struct Light {
 
 uniform Material u_material;
 uniform Light u_lightDirectional;
+uniform vec3 u_slopeColor;
+uniform float u_slopeFactor;
+uniform float u_sloping;
 
 void main()
 {
@@ -36,6 +39,10 @@ void main()
     vec3 xTangent = dFdx(fragPos);
     vec3 yTangent = dFdy(fragPos);
     vec3 norm = normalize(cross(xTangent, yTangent));
+
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    float slope = 1.0 - round(max(dot(norm, up), 0.0) * u_sloping);
+    ambient = mix(ambient, u_slopeColor, slope * u_slopeFactor);
 
     //vec3 norm = normalize(normal);
     vec3 lightDir = normalize(-u_lightDirectional.direction);

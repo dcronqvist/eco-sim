@@ -20,6 +20,10 @@ World world;
 
 entt::entity selectedEntity = entt::null;
 
+glm::vec3 slopeColor = { 1.0f, 1.0f, 1.0f };
+float slopeFactor = 1.0f;
+float sloping = 1.0f;
+
 // Called whenever the window or framebuffer's size is changed
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -66,6 +70,9 @@ void GameWindow::Update() {
     world.Update();
     // Performs hot-reload of shader. Only reloads whenever it has been modified - so not every frame.
     s.ReloadFromFile();
+    s.SetVec3("u_slopeColor", slopeColor);
+    s.SetFloat("u_slopeFactor", slopeFactor);
+    s.SetFloat("u_sloping", sloping);
 
     if (Input::IsKeyPressed(GLFW_KEY_A)) {
         world.CreateEntity();
@@ -95,6 +102,12 @@ void SubmitUI() {
     ImGui::ColorEdit3("Water Ambient Color", glm::value_ptr(world.waterAmbientColor), 0);
     ImGui::ColorEdit3("Water Diffuse Color", glm::value_ptr(world.waterDiffuseColor), 0);
     ImGui::ColorEdit3("Water Specular Color", glm::value_ptr(world.waterSpecularColor), 0);
+
+    ImGui::Separator();
+
+    ImGui::ColorEdit3("Slope Color", glm::value_ptr(slopeColor), 0);
+    ImGui::SliderFloat("Slope Factor", &slopeFactor, 0.0f, 50.0f, "%.2f", 0);
+    ImGui::SliderFloat("Sloping", &sloping, 0.0f, 10.0f, "%.2f", 0);
 
     ImGui::End();
 
@@ -127,6 +140,9 @@ void SubmitUI() {
         if (ImGui::Button("Add ModelComponent")) {
             e.AddComponent<ModelComponent>();
         }
+        if (ImGui::Button("Add FollowGroundHeightComponent")) {
+            e.AddComponent<FollowGroundHeightComponent>();
+        }
 
         ImGui::Separator();
 
@@ -140,6 +156,10 @@ void SubmitUI() {
         }
         if (e.HasComponent<ModelComponent>()) {
             e.GetComponent<ModelComponent>().UI();
+            ImGui::Separator();
+        }
+        if (e.HasComponent<FollowGroundHeightComponent>()) {
+            e.GetComponent<FollowGroundHeightComponent>().UI();
             ImGui::Separator();
         }
     }
